@@ -1,0 +1,54 @@
+package main
+
+import (
+	"context"
+	config "golang-test-task/internal/configs"
+	"golang-test-task/internal/handlers"
+	postgreSQL "golang-test-task/internal/repository/postgres"
+	"golang-test-task/internal/service"
+	"log/slog"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	sl "github.com/gladinov/mylogger"
+	"github.com/labstack/echo/v4"
+)
+
+func main() {
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
+
+	conf := config.MustInitConfig()
+
+	logg := sl.NewLogger(conf.Env)
+
+	logg.Info("start app",
+		slog.String("env", conf.Env))
+
+	repo := postgreSQL.MustInitNewStorage(ctx, conf, logg)
+
+	serviceClient := service.New(
+		logg,
+		repo)
+
+	handl := handlers.NewHandlers(logg, serviceClient)
+
+	e := echo.New()
+	e.POST("/numbers", handl.SaveNumberAndGetSortedNumbers)
+
+	go func() {
+		<-ctx.Done()
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		if err := e.Shutdown(shutdownCtx); err != nil {
+			logg.Error("Failed to shutdown server:", slog.String("error", err.Error()))
+		}
+	}()
+
+	address := conf.Clients.TestAppClient.GetTestAppClientAddress()
+	logg.Info("run test App", slog.String("address", address))
+	e.Start(address)
+}

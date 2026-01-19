@@ -1,0 +1,7 @@
+postgresHost:
+  sslmode: "disable"
+clients:
+  testAppClient:
+    testAppHost: "0.0.0.0"
+
+
