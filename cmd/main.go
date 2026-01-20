@@ -29,6 +29,12 @@ func main() {
 
 	repo := postgreSQL.MustInitNewStorage(ctx, conf, logg)
 
+	defer func() {
+		if repo != nil {
+			repo.CloseDB()
+		}
+	}()
+
 	serviceClient := service.New(
 		logg,
 		repo)
