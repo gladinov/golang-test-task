@@ -100,13 +100,13 @@ func (s *Storage) SaveNumber(
 		VALUES ($1)
 	`, value)
 	if err != nil {
-		return fmt.Errorf("insert number: %w", err)
+		return err
 	}
 
 	return nil
 }
 
-func (s *Storage) GetNumbers(ctx context.Context) ([]int64, error) {
+func (s *Storage) GetNumbers(ctx context.Context) (_ []int64, err error) {
 	const op = "postgreSql.GetNumbers"
 
 	start := time.Now()
@@ -116,6 +116,8 @@ func (s *Storage) GetNumbers(ctx context.Context) ([]int64, error) {
 		logg.Debug("finished",
 			slog.Duration("duration", time.Since(start)),
 		)
+
+		err = e.WrapIfErr("can't get number", err)
 	}()
 
 	rows, err := s.db.Query(ctx, `
@@ -124,7 +126,7 @@ func (s *Storage) GetNumbers(ctx context.Context) ([]int64, error) {
 		ORDER BY number ASC
 	`)
 	if err != nil {
-		return nil, fmt.Errorf("query numbers: %w", err)
+		return nil, e.WrapIfErr("query numbers", err)
 	}
 	defer rows.Close()
 
@@ -132,13 +134,13 @@ func (s *Storage) GetNumbers(ctx context.Context) ([]int64, error) {
 	for rows.Next() {
 		var v int64
 		if err := rows.Scan(&v); err != nil {
-			return nil, fmt.Errorf("scan number: %w", err)
+			return nil, e.WrapIfErr("scan number", err)
 		}
 		res = append(res, v)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("rows error: %w", err)
+		return nil, e.WrapIfErr("rows error", err)
 	}
 
 	return res, nil
@@ -160,9 +162,4 @@ func MustInitNewStorage(ctx context.Context, config config.Config, logg *slog.Lo
 	}
 	logg.Info("PostgreSQL storage initialized successfully")
 	return serviceStorage
-}
-
-func (s *Storage) TruncateNumbers(ctx context.Context) error {
-	_, err := s.db.Exec(ctx, "DELETE FROM numbers")
-	return err
 }

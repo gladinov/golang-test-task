@@ -2,10 +2,11 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"golang-test-task/internal/repository"
 	"log/slog"
 	"time"
+
+	"github.com/gladinov/e"
 )
 
 //go:generate go run github.com/vektra/mockery/v2@v2.53.5 --name=Service
@@ -35,7 +36,7 @@ func (c *Client) SaveNumber(ctx context.Context, numb int64) error {
 
 	if err := c.Storage.SaveNumber(ctx, numb); err != nil {
 		logg.Error("failed to save number", slog.Any("error", err))
-		return fmt.Errorf("could not save number: %w", err)
+		return e.WrapIfErr("could not save number", err)
 	}
 
 	logg.Debug("number saved successfully", slog.Duration("duration", time.Since(start)))
@@ -52,7 +53,7 @@ func (c *Client) GetNumbers(ctx context.Context) ([]int64, error) {
 	numbers, err := c.Storage.GetNumbers(ctx)
 	if err != nil {
 		logg.Error("failed to get numbers", slog.Any("error", err))
-		return nil, fmt.Errorf("could not get numbers: %w", err)
+		return nil, e.WrapIfErr("could not get numbers", err)
 	}
 
 	logg.Debug("numbers fetched successfully", slog.Duration("duration", time.Since(start)), slog.Int("count", len(numbers)))
