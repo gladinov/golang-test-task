@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"golang-test-task/internal/logging"
 	"golang-test-task/internal/service"
 	"log/slog"
@@ -38,6 +39,8 @@ func (h *Handlers) SaveNumberAndGetSortedNumbers(c echo.Context) error {
 	}
 
 	if req.Number == nil {
+		errMsg := "number is required"
+		logging.LoggerError(ctx, h.logger, errMsg, op, errors.New(errMsg))
 		return jsonError(c, http.StatusBadRequest, "number is required")
 	}
 

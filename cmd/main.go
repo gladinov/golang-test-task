@@ -4,6 +4,7 @@ import (
 	"context"
 	config "golang-test-task/internal/configs"
 	"golang-test-task/internal/handlers"
+	"golang-test-task/internal/repository"
 	postgreSQL "golang-test-task/internal/repository/postgres"
 	"golang-test-task/internal/service"
 	"log/slog"
@@ -17,7 +18,7 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 )
 
-func setupServer(logg *slog.Logger, repo *postgreSQL.Storage) *echo.Echo {
+func setupServer(logg *slog.Logger, repo repository.Storage) *echo.Echo {
 	svc := service.New(logg, repo)
 	handlers := handlers.NewHandlers(logg, svc)
 

@@ -37,6 +37,7 @@ services:
       PGUSER: ${SERVICE_PGUSER}
     volumes:
       - postgres_service_data:/var/lib/postgresql
+      - ../postgres/init:/docker-entrypoint-initdb.d:ro
     ports:
       - "${POSTGRES_SERVICE_PORT}:5432"
     networks:

@@ -50,9 +50,6 @@ func NewTestStorage(t *testing.T) *Storage {
 	storage, err := NewPostgresStorageWithCreator(ctx, logger, creator)
 	require.NoError(t, err)
 
-	err = storage.InitDB(ctx)
-	require.NoError(t, err)
-
 	err = storage.TruncateNumbers(context.Background())
 	require.NoError(t, err)
 
@@ -92,7 +89,7 @@ func TestNewStorage_Integration_Success(t *testing.T) {
 func TestInitDB_Integration(t *testing.T) {
 	ctx := context.Background()
 	storage := NewTestStorage(t)
-	err := storage.InitDB(ctx)
+	err := storage.InitDBForTest(ctx)
 	require.NoError(t, err)
 
 	var exists bool
@@ -110,7 +107,7 @@ func TestInitDB_Integration(t *testing.T) {
 func TestSaveNumber_Integration(t *testing.T) {
 	ctx := context.Background()
 	storage := NewTestStorage(t)
-	err := storage.InitDB(ctx)
+	err := storage.InitDBForTest(ctx)
 	require.NoError(t, err)
 
 	var number int64 = 1
@@ -126,7 +123,7 @@ func TestSaveNumber_Integration(t *testing.T) {
 func TestSaveSeveralNumbers_Integration(t *testing.T) {
 	ctx := context.Background()
 	storage := NewTestStorage(t)
-	err := storage.InitDB(ctx)
+	err := storage.InitDBForTest(ctx)
 	require.NoError(t, err)
 	for i := int64(1); i <= 3; i++ {
 		require.NoError(t, storage.SaveNumber(ctx, i))
@@ -148,7 +145,7 @@ func TestSaveSeveralNumbers_Integration(t *testing.T) {
 func TestGetNumbers_Integration(t *testing.T) {
 	ctx := context.Background()
 	storage := NewTestStorage(t)
-	err := storage.InitDB(ctx)
+	err := storage.InitDBForTest(ctx)
 	require.NoError(t, err)
 
 	var number int64 = 1
@@ -163,7 +160,7 @@ func TestGetNumbers_Integration(t *testing.T) {
 func TestGetSeveralNumbers_Integration(t *testing.T) {
 	ctx := context.Background()
 	storage := NewTestStorage(t)
-	err := storage.InitDB(ctx)
+	err := storage.InitDBForTest(ctx)
 	require.NoError(t, err)
 
 	numbers := []int64{1, 3, 2}
@@ -181,7 +178,7 @@ func TestGetSeveralNumbers_Integration(t *testing.T) {
 func TestGetNumbers_Empty_Integration(t *testing.T) {
 	ctx := context.Background()
 	storage := NewTestStorage(t)
-	err := storage.InitDB(ctx)
+	err := storage.InitDBForTest(ctx)
 	require.NoError(t, err)
 
 	res, err := storage.GetNumbers(ctx)

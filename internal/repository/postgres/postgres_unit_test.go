@@ -68,7 +68,7 @@ func TestInitDB_Unit(t *testing.T) {
 			mockDBAdapter := mocks.NewDBAdapter(t)
 			storage := NewStorageWithAdapter(logg, mockDBAdapter)
 			tc.setupMock(mockDBAdapter)
-			err := storage.InitDB(context.Background())
+			err := storage.InitDBForTest(context.Background())
 			if tc.wantErr {
 				require.Error(t, err)
 				require.Contains(t, err.Error(), "could not InitDB")
@@ -384,27 +384,17 @@ func TestMustInitNewStorageWithCreator(t *testing.T) {
 		{
 			name: "success",
 			setupMock: func(creator *poolCreatorMocks.PoolCreator, db *mocks.DBAdapter) {
-				db.On("Exec", mock.Anything, mock.Anything).Return(nil, nil).Once()
-				creator.On("NewPool").Return(db, nil).Once()
+				creator.On("NewPool").Return(nil, nil).Once()
 			},
 			expectPanic: false,
 		},
 		{
 			name: "creator.NewPool returns error -> panic",
 			setupMock: func(creator *poolCreatorMocks.PoolCreator, db *mocks.DBAdapter) {
-				creator.On("NewPool").Return(nil, errors.New("cannot create pool")).Once()
+				creator.On("NewPool").Return(db, errors.New("cannot create pool")).Once()
 			},
 			expectPanic:   true,
 			panicContains: "cannot create pool",
-		},
-		{
-			name: "InitDB returns error -> panic",
-			setupMock: func(creator *poolCreatorMocks.PoolCreator, db *mocks.DBAdapter) {
-				db.On("Exec", mock.Anything, mock.Anything).Return(nil, errors.New("init db failed")).Once()
-				creator.On("NewPool").Return(db, nil).Once()
-			},
-			expectPanic:   true,
-			panicContains: "init db failed",
 		},
 	}
 
@@ -413,9 +403,8 @@ func TestMustInitNewStorageWithCreator(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			db := mocks.NewDBAdapter(t)
 			creator := poolCreatorMocks.NewPoolCreator(t)
-
+			db := mocks.NewDBAdapter(t)
 			tc.setupMock(creator, db)
 
 			if tc.expectPanic {
@@ -436,7 +425,6 @@ func TestMustInitNewStorageWithCreator(t *testing.T) {
 				require.NotNil(t, storage)
 			}
 
-			db.AssertExpectations(t)
 			creator.AssertExpectations(t)
 		})
 	}

@@ -1,7 +1,7 @@
 services:
   postgres-service--test-db:
     image: postgres:latest
-    container_name: service_postgres
+    container_name: postgres-service--test-db
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
@@ -10,6 +10,7 @@ services:
       PGUSER: ${PGUSER}
     volumes:
       - postgres_service_data:/var/lib/postgresql
+      - ../postgres/init:/docker-entrypoint-initdb.d:ro
     ports:
       - "${POSTGRES_SERVICE_PORT}:5432"
     networks:

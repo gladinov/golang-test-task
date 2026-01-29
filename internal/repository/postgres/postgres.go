@@ -18,25 +18,6 @@ func NewStorageWithAdapter(logg *slog.Logger, db repository.DBAdapter) *Storage 
 	return &Storage{logger: logg, db: db}
 }
 
-func MustInitNewStorageWithCreator(ctx context.Context, logger *slog.Logger, creator PoolCreator) *Storage {
-	const op = "repository.MustInitNewStorage"
-	logg := logger.With(slog.String("op", op))
-	logg.Debug("start")
-
-	serviceStorage, err := NewPostgresStorageWithCreator(ctx, logg, creator)
-	if err != nil {
-		logg.DebugContext(ctx, "failed to create PostgreSQL storage", "err", err)
-		panic(err)
-	}
-	err = serviceStorage.InitDB(ctx)
-	if err != nil {
-		logg.DebugContext(ctx, "failed to init PostgreSQL database", "err", err)
-		panic(err)
-	}
-
-	return serviceStorage
-}
-
 func NewPostgresStorageWithCreator(ctx context.Context, logger *slog.Logger, creator PoolCreator) (_ *Storage, err error) {
 	const op = "postgreSQL.NewPostgresStorageWithCreator"
 
@@ -48,6 +29,19 @@ func NewPostgresStorageWithCreator(ctx context.Context, logger *slog.Logger, cre
 	return NewStorageWithAdapter(logger, adapter), nil
 }
 
+func MustInitNewStorageWithCreator(ctx context.Context, logger *slog.Logger, creator PoolCreator) *Storage {
+	const op = "repository.MustInitNewStorage"
+	logg := logger.With(slog.String("op", op))
+
+	serviceStorage, err := NewPostgresStorageWithCreator(ctx, logg, creator)
+	if err != nil {
+		logg.DebugContext(ctx, "failed to create PostgreSQL storage", "err", err)
+		panic(err)
+	}
+
+	return serviceStorage
+}
+
 func (s *Storage) CloseDB() {
 	if s == nil || s.db == nil {
 		return
@@ -55,15 +49,16 @@ func (s *Storage) CloseDB() {
 	s.db.Close()
 }
 
-func (s *Storage) InitDB(ctx context.Context) (err error) {
-	const op = "postgreSQL.InitDB"
+func (s *Storage) InitDBForTest(ctx context.Context) (err error) {
+	const op = "postgreSQL.InitDBForTest"
 	defer func() {
 		err = e.WrapIfErr("could not InitDB", err)
 	}()
-	return s.createNumbersTable(ctx)
+	return s.createNumbersTableForTest(ctx)
 }
 
-func (s *Storage) createNumbersTable(ctx context.Context) error {
+func (s *Storage) createNumbersTableForTest(ctx context.Context) error {
+	const op = "postgreSQL.createNumbersTableForTest"
 	_, err := s.db.Exec(ctx, queryCreateNumberTable)
 	if err != nil {
 		return e.WrapIfErr("could not create nubmers table", err)
