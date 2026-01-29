@@ -47,7 +47,7 @@ func NewTestStorage(t *testing.T) *Storage {
 
 	creator := NewPoolCreator(postgresHost)
 
-	storage, err := NewPostgresStorageWithCreator(logger, creator)
+	storage, err := NewPostgresStorageWithCreator(ctx, logger, creator)
 	require.NoError(t, err)
 
 	err = storage.InitDB(ctx)
@@ -65,6 +65,7 @@ func NewTestStorage(t *testing.T) *Storage {
 }
 
 func TestNewStorage_Integration_Success(t *testing.T) {
+	ctx := context.Background()
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	conf := config.MustInitConfig()
 	postgresHost, err := conf.PostgresHost.GetStringHost()
@@ -72,7 +73,7 @@ func TestNewStorage_Integration_Success(t *testing.T) {
 
 	creator := NewPoolCreator(postgresHost)
 
-	storage, err := NewPostgresStorageWithCreator(logger, creator)
+	storage, err := NewPostgresStorageWithCreator(ctx, logger, creator)
 	require.NoError(t, err)
 	require.NoError(t, err)
 	require.NotNil(t, storage)

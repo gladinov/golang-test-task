@@ -23,7 +23,7 @@ func MustInitNewStorageWithCreator(ctx context.Context, logg *slog.Logger, creat
 	const op = "repository.MustInitNewStorage"
 	logg.Debug(fmt.Sprintf("start %s", op))
 
-	serviceStorage, err := NewPostgresStorageWithCreator(logg, creator)
+	serviceStorage, err := NewPostgresStorageWithCreator(ctx, logg, creator)
 	if err != nil {
 		logg.Debug("failed to create PostgreSQL storage", "err", err)
 		panic(err)
@@ -37,7 +37,7 @@ func MustInitNewStorageWithCreator(ctx context.Context, logg *slog.Logger, creat
 	return serviceStorage
 }
 
-func NewPostgresStorageWithCreator(logger *slog.Logger, creator PoolCreator) (_ *Storage, err error) {
+func NewPostgresStorageWithCreator(ctx context.Context, logger *slog.Logger, creator PoolCreator) (_ *Storage, err error) {
 	const op = "postgreSQL.NewPostgresStorageWithCreator"
 	defer func() {
 		err = e.WrapIfErr("could create new postgreSQL storage", err)

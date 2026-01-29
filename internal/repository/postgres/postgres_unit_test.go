@@ -82,6 +82,7 @@ func TestInitDB_Unit(t *testing.T) {
 }
 
 func TestNewPostgresStorageWithCreator_Unit(t *testing.T) {
+	ctx := context.Background()
 	logg := slog.New(slog.NewTextHandler(io.Discard, nil))
 
 	cases := []struct {
@@ -116,7 +117,7 @@ func TestNewPostgresStorageWithCreator_Unit(t *testing.T) {
 			if tc.setupPoolMock != nil {
 				tc.setupPoolMock(mockPoolCreator)
 			}
-			storage, err := NewPostgresStorageWithCreator(logg, mockPoolCreator)
+			storage, err := NewPostgresStorageWithCreator(ctx, logg, mockPoolCreator)
 
 			if tc.wantErr {
 				require.Error(t, err)
