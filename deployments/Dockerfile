@@ -1,0 +1,17 @@
+FROM golang:1.25.1-alpine AS builder
+
+WORKDIR /usr/local/src
+
+RUN apk add --no-cache bash git make gettext gcc musl-dev
+
+COPY ["go.mod","go.sum","./"]
+RUN go mod download
+
+COPY . .
+RUN CGO_ENABLED=1 GOOS=linux go build -o ./bin/test-task ./cmd/main.go
+
+FROM alpine AS runner
+
+COPY --from=builder /usr/local/src/bin/test-task /
+
+CMD ["/test-task"]
