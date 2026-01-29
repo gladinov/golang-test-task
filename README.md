@@ -15,15 +15,13 @@
 
 ---
 
-Сборка и запуск через Docker Compose:
-
-```bash
-docker compose --env-file .env up -d
-```
 
 ### Использование Makefile
 
 В проекте используется `Makefile`, который инкапсулирует основные сценарии запуска, тестирования и проверки качества кода.
+```markdown
+> На Windows рекомендуется использовать WSL.
+```
 
 #### Основные команды
 
@@ -44,14 +42,32 @@ docker compose --env-file .env up -d
 
 #### Продакшн
 
+##### Запуск
+
 ```bash
 make build-up
-
-Остановка:
-
+```
+##### Остановка:
+```bash
 make down
 ```
 
+### Тесты
+
+####Unit-тесты (без БД):
+```bash
+make test-unit
+```
+
+####Интеграционные тесты (с тестовой БД):
+```bash
+make test-integration
+```
+
+###Покрытие тестами (unit + integration)
+```bash
+make coverage-all
+```
 
 После запуска сервис будет доступен по адресу:
 `http://localhost:8080`
