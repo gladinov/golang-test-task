@@ -3,77 +3,72 @@ package postgreSQL
 import (
 	"context"
 	"fmt"
+	"golang-test-task/internal/repository"
 	"log/slog"
 	"time"
 
-	config "golang-test-task/internal/configs"
-
 	"github.com/gladinov/e"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Storage struct {
 	logger *slog.Logger
-	db     *pgxpool.Pool
+	db     repository.DBAdapter
 }
 
-func NewStorage(logger *slog.Logger, postgresConfig config.Config) (_ *Storage, err error) {
-	const op = "postgreSQL.NewStorage"
+func NewStorageWithAdapter(logg *slog.Logger, db repository.DBAdapter) *Storage {
+	return &Storage{logger: logg, db: db}
+}
 
-	start := time.Now()
-	logg := logger.With(
-		slog.String("op", op))
+func MustInitNewStorageWithCreator(ctx context.Context, logg *slog.Logger, creator PoolCreator) *Storage {
+	const op = "repository.MustInitNewStorage"
 	logg.Debug(fmt.Sprintf("start %s", op))
-	defer func() {
-		logg.Debug("fineshed",
-			slog.Duration("duration", time.Since(start)),
-			slog.Any("error", err),
-		)
 
+	serviceStorage, err := NewPostgresStorageWithCreator(logg, creator)
+	if err != nil {
+		logg.Debug("failed to create PostgreSQL storage", "err", err)
+		panic(err)
+	}
+	err = serviceStorage.InitDB(ctx)
+	if err != nil {
+		logg.Debug("failed to init PostgreSQL database", "err", err)
+		panic(err)
+	}
+	logg.Info("PostgreSQL storage initialized successfully")
+	return serviceStorage
+}
+
+func NewPostgresStorageWithCreator(logger *slog.Logger, creator PoolCreator) (_ *Storage, err error) {
+	const op = "postgreSQL.NewPostgresStorageWithCreator"
+	defer func() {
 		err = e.WrapIfErr("could create new postgreSQL storage", err)
 	}()
+	adapter, err := creator.NewPool()
+	if err != nil {
+		return nil, err
+	}
 
-	postgresHost, err := postgresConfig.PostgresHost.GetStringHost()
-	if err != nil {
-		return nil, err
-	}
-	db, err := pgxpool.New(context.Background(), postgresHost)
-	if err != nil {
-		return nil, err
-	}
-	return &Storage{db: db, logger: logger}, nil
+	return NewStorageWithAdapter(logger, adapter), nil
 }
 
 func (s *Storage) CloseDB() {
+	if s == nil || s.db == nil {
+		return
+	}
 	s.db.Close()
 }
 
 func (s *Storage) InitDB(ctx context.Context) (err error) {
 	const op = "postgreSQL.InitDB"
-
-	start := time.Now()
-	logg := s.logger.With(
-		slog.String("op", op))
-	logg.Debug(fmt.Sprintf("start %s", op))
 	defer func() {
-		logg.Debug("fineshed",
-			slog.Duration("duration", time.Since(start)),
-			slog.Any("error", err),
-		)
 		err = e.WrapIfErr("could not InitDB", err)
 	}()
-	err = s.createNumbersTable(ctx)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return s.createNumbersTable(ctx)
 }
 
 func (s *Storage) createNumbersTable(ctx context.Context) error {
 	_, err := s.db.Exec(ctx, queryCreateNumberTable)
 	if err != nil {
-		return e.WrapIfErr("could not create bond reports table", err)
+		return e.WrapIfErr("could not create nubmers table", err)
 	}
 	return nil
 }
@@ -146,20 +141,7 @@ func (s *Storage) GetNumbers(ctx context.Context) (_ []int64, err error) {
 	return res, nil
 }
 
-func MustInitNewStorage(ctx context.Context, config config.Config, logg *slog.Logger) *Storage {
-	const op = "repository.MustInitNewStorage"
-	logg.Debug(fmt.Sprintf("start %s", op))
-
-	serviceStorage, err := NewStorage(logg, config)
-	if err != nil {
-		logg.Debug("failed to create PostgreSQL storage", "err", err)
-		panic(err)
-	}
-	err = serviceStorage.InitDB(ctx)
-	if err != nil {
-		logg.Debug("failed to init PostgreSQL database", "err", err)
-		panic(err)
-	}
-	logg.Info("PostgreSQL storage initialized successfully")
-	return serviceStorage
+func (s *Storage) TruncateNumbers(ctx context.Context) error {
+	_, err := s.db.Exec(ctx, `DROP TABLE IF EXISTS numbers`)
+	return err
 }

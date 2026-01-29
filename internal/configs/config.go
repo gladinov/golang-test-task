@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/gladinov/e"
 	"github.com/ilyakaznacheev/cleanenv"
 )
 
@@ -19,12 +20,12 @@ type Config struct {
 }
 
 type Clients struct {
-	TestAppClient TestAppClient
+	TestAppClient TestAppClient `yaml:"testAppClient"`
 }
 
 type TestAppClient struct {
 	Host string `yaml:"testAppHost"`
-	Port string `env:"TEST_APP_PORT" env-required:"true"` // TODO: Добавить порт в envs
+	Port string `env:"TEST_APP_PORT" env-required:"true"`
 }
 
 func (c *TestAppClient) GetTestAppClientAddress() string {
@@ -67,20 +68,29 @@ func (p *PostgresHost) GetStringHost() (string, error) {
 	return host, nil
 }
 
-func MustInitConfig() Config {
-	const op = "config.MustInitConfig"
+func InitConfig() (Config, error) {
+	const op = "config.InitConfig"
 	envs, err := InjectEnvs()
 	if err != nil {
-		log.Fatalf("%s: %s", op, err)
+		return Config{}, e.Wrap("InjectEnvs failed", err)
 	}
 
-	Path := filepath.Join(envs.RootPath, envs.ConfigPath)
-	var config Config
-	err = cleanenv.ReadConfig(Path, &config)
-	if err != nil {
-		log.Fatalf("cannot read config: %s", err)
+	path := filepath.Join(envs.RootPath, envs.ConfigPath)
+	var cfg Config
+	if err := cleanenv.ReadConfig(path, &cfg); err != nil {
+		return Config{}, e.Wrap("cannot read config", err)
 	}
-	return config
+
+	return cfg, nil
+}
+
+func MustInitConfig() Config {
+	const op = "config.MustInitConfig"
+	cfg, err := InitConfig()
+	if err != nil {
+		log.Fatalf("%s", err)
+	}
+	return cfg
 }
 
 type Envs struct {

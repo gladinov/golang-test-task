@@ -1,6 +1,8 @@
 services:
   golang-test-app:
-    build: .
+    build: 
+      context: ../../
+      dockerfile: deployments/Dockerfile
     restart: unless-stopped
     container_name: golang-test-app
     depends_on:
@@ -18,7 +20,7 @@ services:
       POSTGRES_DB: ${POSTGRES_SERVICE_DB}
       PGUSER: ${SERVICE_PGUSER}
     volumes:
-      - ./configs/config.yaml:/usr/local/src/configs/config.yaml:ro
+      - ../../configs/config.yaml:/usr/local/src/configs/config.yaml:ro
     ports:
       - "${TEST_APP_PORT}:8080"
     networks:

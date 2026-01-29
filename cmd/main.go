@@ -16,6 +16,16 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+func setupServer(logg *slog.Logger, repo *postgreSQL.Storage) *echo.Echo {
+	svc := service.New(logg, repo)
+	handlers := handlers.NewHandlers(logg, svc)
+
+	e := echo.New()
+	e.POST("/numbers", handlers.SaveNumberAndGetSortedNumbers)
+
+	return e
+}
+
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
@@ -27,7 +37,13 @@ func main() {
 	logg.Info("start app",
 		slog.String("env", conf.Env))
 
-	repo := postgreSQL.MustInitNewStorage(ctx, conf, logg)
+	postgresHost, err := conf.PostgresHost.GetStringHost()
+	if err != nil {
+		logg.Error("could not get postgres host from config")
+		return
+	}
+	creator := postgreSQL.NewPoolCreator(postgresHost)
+	repo := postgreSQL.MustInitNewStorageWithCreator(ctx, logg, creator)
 
 	defer func() {
 		if repo != nil {
@@ -35,14 +51,7 @@ func main() {
 		}
 	}()
 
-	serviceClient := service.New(
-		logg,
-		repo)
-
-	handl := handlers.NewHandlers(logg, serviceClient)
-
-	e := echo.New()
-	e.POST("/numbers", handl.SaveNumberAndGetSortedNumbers)
+	e := setupServer(logg, repo)
 
 	go func() {
 		<-ctx.Done()
