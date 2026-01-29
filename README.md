@@ -54,17 +54,17 @@ make down
 
 ### Тесты
 
-####Unit-тесты (без БД):
+#### Unit-тесты (без БД):
 ```bash
 make test-unit
 ```
 
-####Интеграционные тесты (с тестовой БД):
+#### Интеграционные тесты (с тестовой БД):
 ```bash
 make test-integration
 ```
 
-###Покрытие тестами (unit + integration)
+### Покрытие тестами (unit + integration)
 ```bash
 make coverage-all
 ```
