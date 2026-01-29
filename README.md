@@ -34,7 +34,7 @@
 | `make down-test` | Остановка тестовой БД |
 | `make test-unit` | Запуск **unit-тестов** (без БД) |
 | `make test-integration` | Запуск **интеграционных тестов** (с тестовой БД) |
-| `make coverage-all` | Запуск **unit + integration тестов** и сбор общего покрытия |
+| `make coverage` | Запуск **unit + integration тестов** и сбор общего покрытия |
 
 ---
 
@@ -66,7 +66,7 @@ make test-integration
 
 ### Покрытие тестами (unit + integration)
 ```bash
-make coverage-all
+make coverage
 ```
 
 После запуска сервис будет доступен по адресу:
