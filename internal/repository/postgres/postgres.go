@@ -2,10 +2,9 @@ package postgreSQL
 
 import (
 	"context"
-	"fmt"
+	"golang-test-task/internal/logging"
 	"golang-test-task/internal/repository"
 	"log/slog"
-	"time"
 
 	"github.com/gladinov/e"
 )
@@ -19,32 +18,31 @@ func NewStorageWithAdapter(logg *slog.Logger, db repository.DBAdapter) *Storage 
 	return &Storage{logger: logg, db: db}
 }
 
-func MustInitNewStorageWithCreator(ctx context.Context, logg *slog.Logger, creator PoolCreator) *Storage {
+func MustInitNewStorageWithCreator(ctx context.Context, logger *slog.Logger, creator PoolCreator) *Storage {
 	const op = "repository.MustInitNewStorage"
-	logg.Debug(fmt.Sprintf("start %s", op))
+	logg := logger.With(slog.String("op", op))
+	logg.Debug("start")
 
 	serviceStorage, err := NewPostgresStorageWithCreator(ctx, logg, creator)
 	if err != nil {
-		logg.Debug("failed to create PostgreSQL storage", "err", err)
+		logg.DebugContext(ctx, "failed to create PostgreSQL storage", "err", err)
 		panic(err)
 	}
 	err = serviceStorage.InitDB(ctx)
 	if err != nil {
-		logg.Debug("failed to init PostgreSQL database", "err", err)
+		logg.DebugContext(ctx, "failed to init PostgreSQL database", "err", err)
 		panic(err)
 	}
-	logg.Info("PostgreSQL storage initialized successfully")
+
 	return serviceStorage
 }
 
 func NewPostgresStorageWithCreator(ctx context.Context, logger *slog.Logger, creator PoolCreator) (_ *Storage, err error) {
 	const op = "postgreSQL.NewPostgresStorageWithCreator"
-	defer func() {
-		err = e.WrapIfErr("could create new postgreSQL storage", err)
-	}()
+
 	adapter, err := creator.NewPool()
 	if err != nil {
-		return nil, err
+		return nil, e.WrapIfErr("could create new postgreSQL storage", err)
 	}
 
 	return NewStorageWithAdapter(logger, adapter), nil
@@ -79,17 +77,11 @@ func (s *Storage) SaveNumber(
 ) (err error) {
 	const op = "postgreSql.SaveNumber"
 
-	start := time.Now()
-	logg := s.logger.With(slog.String("op", op))
-	logg.Debug("start")
+	defer logging.LogOperation_Debug(ctx, s.logger, op, &err)()
+
 	defer func() {
-		logg.Debug("finished",
-			slog.Duration("duration", time.Since(start)),
-			slog.Any("error", err),
-		)
 		err = e.WrapIfErr("can't save number", err)
 	}()
-
 	_, err = s.db.Exec(ctx, `
 		INSERT INTO numbers (number)
 		VALUES ($1)
@@ -104,16 +96,7 @@ func (s *Storage) SaveNumber(
 func (s *Storage) GetNumbers(ctx context.Context) (_ []int64, err error) {
 	const op = "postgreSql.GetNumbers"
 
-	start := time.Now()
-	logg := s.logger.With(slog.String("op", op))
-	logg.Debug("start")
-	defer func() {
-		logg.Debug("finished",
-			slog.Duration("duration", time.Since(start)),
-		)
-
-		err = e.WrapIfErr("can't get number", err)
-	}()
+	defer logging.LogOperation_Debug(ctx, s.logger, op, &err)()
 
 	rows, err := s.db.Query(ctx, `
 		SELECT number
@@ -121,7 +104,7 @@ func (s *Storage) GetNumbers(ctx context.Context) (_ []int64, err error) {
 		ORDER BY number ASC
 	`)
 	if err != nil {
-		return nil, e.WrapIfErr("query numbers", err)
+		return nil, e.WrapIfErr("failed to query numbers", err)
 	}
 	defer rows.Close()
 
@@ -129,7 +112,7 @@ func (s *Storage) GetNumbers(ctx context.Context) (_ []int64, err error) {
 	for rows.Next() {
 		var v int64
 		if err := rows.Scan(&v); err != nil {
-			return nil, e.WrapIfErr("scan number", err)
+			return nil, e.WrapIfErr("failed to scan number", err)
 		}
 		res = append(res, v)
 	}

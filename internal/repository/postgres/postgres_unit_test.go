@@ -202,10 +202,11 @@ func TestGetNumbers_Unit(t *testing.T) {
 	ctx := context.Background()
 
 	cases := []struct {
-		name      string
-		setupMock func(db *mocks.DBAdapter, rows *mocks.Rows)
-		want      []int64
-		wantErr   bool
+		name            string
+		setupMock       func(db *mocks.DBAdapter, rows *mocks.Rows)
+		want            []int64
+		wantErr         bool
+		wantErrContains string
 	}{
 		{
 			name: "success",
@@ -249,7 +250,8 @@ func TestGetNumbers_Unit(t *testing.T) {
 					mock.Anything,
 				).Return(nil, errors.New("query failed")).Once()
 			},
-			wantErr: true,
+			wantErr:         true,
+			wantErrContains: "failed to query numbers",
 		},
 		{
 			name: "scan error",
@@ -262,7 +264,8 @@ func TestGetNumbers_Unit(t *testing.T) {
 					Return(errors.New("scan failed")).Once()
 				rows.On("Close").Return().Once()
 			},
-			wantErr: true,
+			wantErr:         true,
+			wantErrContains: "failed to scan number",
 		},
 		{
 			name: "rows.Err returns error",
@@ -288,7 +291,8 @@ func TestGetNumbers_Unit(t *testing.T) {
 				rows.On("Err").Return(errors.New("rows error")).Once()
 				rows.On("Close").Return().Once()
 			},
-			wantErr: true,
+			wantErr:         true,
+			wantErrContains: "rows error",
 		},
 	}
 
@@ -305,7 +309,7 @@ func TestGetNumbers_Unit(t *testing.T) {
 
 			if tc.wantErr {
 				require.Error(t, err)
-				require.Contains(t, err.Error(), "can't get number")
+				require.Contains(t, err.Error(), tc.wantErrContains)
 			} else {
 				require.NoError(t, err)
 				require.Equal(t, tc.want, res)

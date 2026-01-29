@@ -2,9 +2,9 @@ package service
 
 import (
 	"context"
+	"golang-test-task/internal/logging"
 	"golang-test-task/internal/repository"
 	"log/slog"
-	"time"
 
 	"github.com/gladinov/e"
 )
@@ -27,35 +27,29 @@ func New(logger *slog.Logger, storage repository.Storage) *Client {
 	}
 }
 
-func (c *Client) SaveNumber(ctx context.Context, numb int64) error {
+func (c *Client) SaveNumber(ctx context.Context, numb int64) (err error) {
 	const op = "Client.SaveNumber"
-	start := time.Now()
 
-	logg := c.logger.With(slog.String("op", op), slog.Int64("number", numb))
-	logg.Debug("start saving number")
+	logg := c.logger.With(slog.Int64("number", numb))
+	defer logging.LogOperation_Debug(ctx, logg, op, &err)
 
 	if err := c.Storage.SaveNumber(ctx, numb); err != nil {
-		logg.Error("failed to save number", slog.Any("error", err))
 		return e.WrapIfErr("could not save number", err)
 	}
 
-	logg.Debug("number saved successfully", slog.Duration("duration", time.Since(start)))
 	return nil
 }
 
-func (c *Client) GetNumbers(ctx context.Context) ([]int64, error) {
+func (c *Client) GetNumbers(ctx context.Context) (_ []int64, err error) {
 	const op = "Client.GetNumbers"
-	start := time.Now()
 
-	logg := c.logger.With(slog.String("op", op))
-	logg.Debug("start fetching numbers")
+	defer logging.LogOperation_Debug(ctx, c.logger, op, &err)
 
 	numbers, err := c.Storage.GetNumbers(ctx)
 	if err != nil {
-		logg.Error("failed to get numbers", slog.Any("error", err))
-		return nil, e.WrapIfErr("could not get numbers", err)
+		errMsg := "failed to get numbers"
+		return nil, e.WrapIfErr(errMsg, err)
 	}
 
-	logg.Debug("numbers fetched successfully", slog.Duration("duration", time.Since(start)), slog.Int("count", len(numbers)))
 	return numbers, nil
 }

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"golang-test-task/internal/logging"
 	"golang-test-task/internal/service"
 	"log/slog"
 	"net/http"
@@ -30,11 +31,9 @@ func (h *Handlers) SaveNumberAndGetSortedNumbers(c echo.Context) error {
 
 	var req NumberRequest
 	if err := c.Bind(&req); err != nil {
-		h.logger.Error(
-			"failed to bind request",
-			slog.String("op", op),
-			slog.Any("error", err),
-		)
+		errMsg := "failed to bind request"
+		logging.LoggerError(ctx, h.logger, errMsg, op, err)
+
 		return jsonError(c, http.StatusBadRequest, "invalid request")
 	}
 
@@ -43,29 +42,18 @@ func (h *Handlers) SaveNumberAndGetSortedNumbers(c echo.Context) error {
 	}
 
 	if err := h.service.SaveNumber(ctx, *req.Number); err != nil {
-		h.logger.Error(
-			"failed to save number",
-			slog.String("op", op),
-			slog.Any("error", err),
-		)
+		errMsg := "failed to save number"
+		logging.LoggerError(ctx, h.logger, errMsg, op, err)
+
 		return jsonError(c, http.StatusInternalServerError, "cannot save number")
 	}
 
 	numbers, err := h.service.GetNumbers(ctx)
 	if err != nil {
-		h.logger.Error(
-			"failed to get numbers",
-			slog.String("op", op),
-			slog.Any("error", err),
-		)
+		errMsg := "failed to get numbers"
+		logging.LoggerError(ctx, h.logger, errMsg, op, err)
 		return jsonError(c, http.StatusInternalServerError, "cannot get numbers")
 	}
-
-	h.logger.Debug(
-		"numbers saved and fetched successfully",
-		slog.String("op", op),
-		slog.Int("count", len(numbers)),
-	)
 
 	return c.JSON(http.StatusOK, numbers)
 }

@@ -14,16 +14,21 @@ import (
 
 	sl "github.com/gladinov/mylogger"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
 
 func setupServer(logg *slog.Logger, repo *postgreSQL.Storage) *echo.Echo {
 	svc := service.New(logg, repo)
 	handlers := handlers.NewHandlers(logg, svc)
 
-	e := echo.New()
-	e.POST("/numbers", handlers.SaveNumberAndGetSortedNumbers)
+	router := echo.New()
+	router.Use(middleware.CORS())
+	router.Use(handlers.ContextHeaderTraceIdMiddleWare)
+	router.Use(handlers.LoggerMiddleWare)
 
-	return e
+	router.POST("/numbers", handlers.SaveNumberAndGetSortedNumbers)
+
+	return router
 }
 
 func main() {
